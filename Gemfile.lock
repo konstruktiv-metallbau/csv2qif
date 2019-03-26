@@ -1,0 +1,21 @@
+GEM
+  remote: https://rubygems.org/
+  specs:
+    csvjson (1.0.1)
+    csvreader (1.2.3)
+      csvjson (>= 1.0.0)
+      csvyaml (>= 0.1.0)
+      tabreader (>= 1.0.1)
+    csvyaml (1.0.0)
+    qif (1.2.0)
+    tabreader (1.0.1)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  csvreader
+  qif
+
+BUNDLED WITH
+   2.0.1
