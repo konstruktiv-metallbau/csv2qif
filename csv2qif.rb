@@ -5,7 +5,7 @@ require 'qif'
 
 class VoBaLe_CSV
   def self.read(path, opts = {sep: ';'})
-    @data = {}; csv = ""; eof = File.foreach(path).count # wie viele zeilen hat die datei?
+    @meta = {}; csv = ""; eof = File.foreach(path).count # wie viele zeilen hat die datei?
 
     File.readlines(path).each_with_index do |line, row|
       raw_line = line
@@ -15,21 +15,21 @@ class VoBaLe_CSV
       case row
         when 5-1 then
           if match = line.match(/;"(\d*).*;"([\d\.]*)/)
-            @data[:blz], @data[:datum] = match.captures; end
+            @meta[:blz], @meta[:datum] = match.captures; end
         when 6-1 then
           if match = line.match(/;"(\d*).*;"([\d\:]*)/)
-            @data[:konto], @data[:uhrzeit] = match.captures; end
+            @meta[:konto], @meta[:uhrzeit] = match.captures; end
         when 7-1 then
           if match = line.match(/;"(.*)";;".*";"(.*)"/)
-            @data[:abfrager], @data[:kontoinhaber] = match.captures; end
+            @meta[:abfrager], @meta[:kontoinhaber] = match.captures; end
         when 9-1 then
           if match = line.match(/;"([\d\.]*)".*;"([\d\.]*)/)
-            @data[:zeitraum_von], @data[:zeitraum_bis] = match.captures; end
+            @meta[:zeitraum_von], @meta[:zeitraum_bis] = match.captures; end
         when 13-1 then
           headers = CsvReader.parse(line, opts).first.to_a.reject {|i| i.strip.empty?}
-          @data[:headers] = []
+          @meta[:headers] = []
           headers.each do |header| 
-            @data[:headers] << header
+            @meta[:headers] << header
               .downcase
               .gsub(/\./, '')
               .gsub(/[[:punct:]]/, '_')
@@ -44,10 +44,10 @@ class VoBaLe_CSV
           end
         when eof-2 then
           if match = line.match(/"([\d\.]*).*;"([\d\.,]*)"/)
-            @data[:datum_anfangssaldo], @data[:anfangssaldo] = match.captures; end
+            @meta[:datum_anfangssaldo], @meta[:anfangssaldo] = match.captures; end
         when eof-1 then
           if match = line.match(/"([\d\.]*).*;"([\d\.,]*)"/)
-            @data[:datum_endsaldo], @data[:endsaldo] = match.captures; end
+            @meta[:datum_endsaldo], @meta[:endsaldo] = match.captures; end
       end
       
       # vor 13 ist noch header, nach eof-3 ist footer
@@ -55,15 +55,15 @@ class VoBaLe_CSV
     end
 
     @csv = CsvReader.parse(csv, opts)
-    @data[:csv] = self.rows_to_hashes
-    return @data
+    @csv = self.rows_to_hashes
+    return @meta, @csv
   end
 
   def self.rows_to_hashes
     hashes = []
     @csv.each do |row|
       hash = {}
-      @data[:headers].each_with_index do |header, i|
+      @meta[:headers].each_with_index do |header, i|
         hash[header] = row[i] unless row[i].empty?
       end
       hashes << hash
@@ -73,5 +73,7 @@ class VoBaLe_CSV
 end
 
 Dir['rein/*.csv'].each do |file|
-  pp VoBaLe_CSV.read(file)
+  meta, csv = VoBaLe_CSV.read(file)
+  pp csv
+  pp meta
 end
