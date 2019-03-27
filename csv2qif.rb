@@ -103,5 +103,5 @@ end
 
 Dir['rein/*.csv'].each do |file|
   meta, csv = VoBaLe_CSV.read(file)
-  QFI_File.write(file.gsub(/rein/, 'raus').gsub(/\.csv/, '.qfi'), csv, meta)
+  QFI_File.write(file.gsub(/rein/, 'raus').gsub(/\.csv/, '.qif'), csv, meta)
 end
