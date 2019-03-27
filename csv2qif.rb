@@ -5,6 +5,8 @@ require 'qif'
 
 class VoBaLe_CSV
   def self.read(path, opts = {sep: ';'})
+    puts "Reading from #{path}"
+
     @meta = {}; csv = ""; eof = File.foreach(path).count # wie viele zeilen hat die datei?
 
     File.readlines(path).each_with_index do |line, row|
@@ -64,7 +66,7 @@ class VoBaLe_CSV
     @csv.each do |row|
       hash = {}
       @meta[:headers].each_with_index do |header, i|
-        hash[header] = row[i] unless row[i].empty?
+        hash[header.to_sym] = row[i] unless row[i].empty?
       end
       hashes << hash
     end
@@ -72,8 +74,34 @@ class VoBaLe_CSV
   end
 end
 
+class QFI_File
+  def self.write(path, csv_data, csv_meta)
+    puts "Writing to #{path}"
+
+    Qif::Writer.open(path, type = 'Bank', format = 'dd/mm/yyyy') do |qif_entry|
+      csv_data.each do |row|
+        row.each do |key, value|
+          case key
+            when :buchungstag, :valuta then value.gsub! /\./, '/'
+          end
+        end; transaction = Qif::Transaction.new(
+          # date, amount, status (cleared yes/no?), number (id),
+          # payee, memo, address (up to 5 lines), category,
+          date: row[:buchungstag],
+          amount: row[:umsatz],
+          memo: row[:vorgang_verwendungszweck],
+          payee: row[:empfaenger_zahlungspflichtiger]
+          # split_category, split_memo, split_amount (all ???),
+          # end (???), reference, name, description (all deprecated)
+        ) # possesses .to_s!
+        puts "\n--- Transaction ---"; puts transaction
+        qif_entry << transaction
+      end
+    end
+  end
+end
+
 Dir['rein/*.csv'].each do |file|
   meta, csv = VoBaLe_CSV.read(file)
-  pp csv
-  pp meta
+  QFI_File.write(file.gsub(/rein/, 'raus').gsub(/\.csv/, '.qfi'), csv, meta)
 end
