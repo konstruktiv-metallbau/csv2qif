@@ -67,6 +67,9 @@ class VoBaLe_CSV
       hash = {}
       @meta[:headers].each_with_index do |header, i|
         hash[header.to_sym] = row[i] unless row[i].empty?
+      end; if hash[:umsatz]
+        hash[:umsatz] = hash[:umsatz].gsub(/,/, '.').to_f # string als fließkommazahl parsen
+        hash[:umsatz] = -hash[:umsatz] if row.last == 'S' # "soll" nach "minus" konvertieren
       end
       hashes << hash
     end
@@ -74,28 +77,45 @@ class VoBaLe_CSV
   end
 end
 
-class QFI_File
+class QIF_File
   def self.write(path, csv_data, csv_meta)
     puts "Writing to #{path}"
 
-    Qif::Writer.open(path, type = 'Bank', format = 'dd/mm/yyyy') do |qif_entry|
+    Qif::Writer.open(path, type = 'Bank', format = 'dd/mm/yyyy') do |qif_file|
       csv_data.each do |row|
+        puts "\n--- Transaction ---"
         row.each do |key, value|
           case key
-            when :buchungstag, :valuta then value.gsub! /\./, '/'
+            when :buchungstag, :valuta then value.gsub! /\./, '/' # datumsformat der lib einhalten!
           end
         end; transaction = Qif::Transaction.new(
-          # date, amount, status (cleared yes/no?), number (id),
-          # payee, memo, address (up to 5 lines), category,
-          date: row[:buchungstag],
-          amount: row[:umsatz],
-          memo: row[:vorgang_verwendungszweck],
-          payee: row[:empfaenger_zahlungspflichtiger]
-          # split_category, split_memo, split_amount (all ???),
-          # end (???), reference, name, description (all deprecated)
-        ) # possesses .to_s!
-        puts "\n--- Transaction ---"; puts transaction
-        qif_entry << transaction
+          #
+          # Genutzte QIF-Felder:
+          # --------------------
+          # date, amount, status (cleared yes/no?), memo,
+          # payee, address (up to 5 lines)
+          #
+          # Ungenutzte QIF-Felder:
+          # ----------------------
+          # number (id; da nicht im CSV enthalten),
+          # split_category, split_memo, split_amount (ggf. von der lib befüllt?),
+          # end (von der lib befüllt?),
+          # reference, name, description (alle von der lib deprecated),
+          # category (nicht im CSV enthalten?)
+          #
+          date: (row[:valuta] || row[:buchungstag]), # wenns tag der wertstellung nicht gibt ist buchungstag besser als nx
+          amount: row[:umsatz], # bereits negative (S) oder positive (H) zahl - siehe VoBaLe_CSV#rows_to_hashes...
+          status: (row[:valuta] ? true : false), # wenn es ein valuta-datum gibt, sollte der umsatz bereits gebucht sein...
+          memo: row[:vorgang_verwendungszweck], # einfach so wie es ist...
+          # wenn negativ: z.B. Jan hat Geld von der eG bekommen
+          # wenn positiv: z.B. die eG hat Geld vom Finanzamt zurückbekommen
+          payee: (row[:umsatz] < 0 ? row[:empfaenger_zahlungspflichtiger] : row[:auftraggeber_zahlungsempfaenger]),
+          # wenn negativ: z.B. die eG hat Geld an Jan gezahlt
+          # wenn positiv: z.B. die eG hat Geld ans Finanzamt zahlen müssen
+          address: (row[:umsatz] < 0 ? row[:auftraggeber_zahlungsempfaenger] : row[:empfaenger_zahlungspflichtiger])
+          #
+        ); qif_file << transaction
+        puts transaction
       end
     end
   end
@@ -103,5 +123,5 @@ end
 
 Dir['rein/*.csv'].each do |file|
   meta, csv = VoBaLe_CSV.read(file)
-  QFI_File.write(file.gsub(/rein/, 'raus').gsub(/\.csv/, '.qif'), csv, meta)
+  QIF_File.write(file.gsub(/rein/, 'raus').gsub(/\.csv/, '.qif'), csv, meta)
 end
