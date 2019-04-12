@@ -153,14 +153,16 @@ class QIF_File
 end
 
 begin
-  n_records = 0
+  $a_files = []
+  $n_records = 0
   Dir['rein/*.csv'].each do |file|
+    $a_files << file
     meta, csv = VoBaLe_CSV.read(file)
-    n_records += QIF_File.write(file.gsub(/rein/, 'raus').gsub(/\.csv/, '.qif'), csv, meta)
+    $n_records += QIF_File.write(file.gsub(/rein/, 'raus').gsub(/\.csv/, '.qif'), csv, meta)
   end
-  puts "\nKeine Fehler.\n#{n_records} Datensätze in QIF-Datei geschrieben."
+  puts "\nKeine Fehler.\n#{$n_records} Datensätze in #{$a_files.count} QIF-Datei#{'en' if $a_files.count != 1} geschrieben."
 rescue Exception => e
-  puts "\nEs gab einen Fehler (\"#{e}\").\nBitte schreib Jonathan <jrs+konstruktiv@weitnahbei.de> eine E-Mail!"
+  puts "\nEs gab einen Fehler (\"#{e}\") in #{$a_files.last}.\nBitte schreib Jonathan <jrs+konstruktiv@weitnahbei.de> eine E-Mail!"
 end
 
 print "Drück die ENTER-Taste, um das Programm zu beenden."; gets
