@@ -109,6 +109,7 @@ class QIF_File
     Qif::Writer.open(path, type = 'Bank', format = 'dd/mm/yyyy') do |qif_file|
       csv_data.each do |row|
         next if row[:umsatz].nil? # zeilen ohne umsatz sind keine überweisungen
+
         puts "\n--- Transaction ---"
 
         row.each do |key, value|
@@ -162,7 +163,7 @@ begin
   end
   puts "\nKeine Fehler.\n#{$n_records} Datensätze in #{$a_files.count} QIF-Datei#{'en' if $a_files.count != 1} geschrieben."
 rescue Exception => e
-  puts "\nEs gab einen Fehler (\"#{e}\") in #{$a_files.last}.\nBitte schreib Jonathan <jrs+konstruktiv@weitnahbei.de> eine E-Mail!"
+  puts "\nEs gab einen Fehler (\"#{e}\") in #{$a_files.last}.\nBitte lege auf https://github.com/konstruktiv-metallbau/csv2qif ein neues Issue an!"
 end
 
 print "Drück die ENTER-Taste, um das Programm zu beenden."; gets
