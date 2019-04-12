@@ -108,6 +108,7 @@ class QIF_File
 
     Qif::Writer.open(path, type = 'Bank', format = 'dd/mm/yyyy') do |qif_file|
       csv_data.each do |row|
+        next if row[:umsatz].nil? # zeilen ohne umsatz sind keine überweisungen
         puts "\n--- Transaction ---"
 
         row.each do |key, value|
