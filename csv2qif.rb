@@ -1,4 +1,5 @@
 #!/usr/bin/env ruby
+# Copyright (C) 2019 J. R. Schmid <jrs+git@weitnahbei.de> for Konstruktiv eG, Leipzig
 
 require 'csvreader'
 require 'qif'
@@ -153,6 +154,11 @@ class QIF_File
   end
 end
 
+puts "Copyright (C) 2019 J. R. Schmid <jrs+git@weitnahbei.de> for Konstruktiv eG, Leipzig"
+puts "This program comes with ABSOLUTELY NO WARRANTY;"
+puts "This is free software, and you are welcome to redistribute it"
+puts "under certain conditions. See LICENSE.md for details."
+  
 begin
   $a_files = []
   $n_records = 0
